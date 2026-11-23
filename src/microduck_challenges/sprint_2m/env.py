@@ -125,6 +125,8 @@ from mjlab_microduck.robot.microduck_constants import MICRODUCK_WALK_ROBOT_CFG
 from mjlab_microduck.tasks import mdp as microduck_mdp
 from mjlab_microduck.tasks.symmetry import PpoWithSymmetryCfg, SYMMETRY_CFG
 
+from . import rewards
+
 
 def heading_error(env: ManagerBasedRlEnv) -> torch.Tensor:
     """How far the trunk has turned from the heading heading_hold holds (rad, wrapped).
@@ -293,6 +295,11 @@ def make_env_cfg(
     # Velocity tracking rewards
     cfg.rewards["track_linear_velocity"].weight = knobs["forward_reward"]
     cfg.rewards["track_linear_velocity"].params["std"] = math.sqrt(0.1)
+    cfg.rewards["exceed_command"] = RewardTermCfg(
+        func=rewards.exceed_command,
+        weight=2.0,
+        params={"command_name": "twist", "std": 0.25},
+    )
     cfg.rewards["track_angular_velocity"].weight = 2.0
     cfg.rewards["track_angular_velocity"].params["std"] = math.sqrt(0.5)
 

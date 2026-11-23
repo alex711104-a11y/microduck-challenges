@@ -125,6 +125,23 @@ def test_the_critic_sees_the_heading_error_heading_hold_prices(folder):
     assert torch.allclose(reward[:2], torch.exp(-error[:2] ** 2 / 0.4**2), atol=1e-5)
 
 
+def test_sprint_exceed_command_reward_is_bounded_and_never_negative():
+    rewards = importlib.import_module("microduck_challenges.sprint_2m.rewards")
+    velocities = torch.tensor([0.5, 1.0, 1.5, 2.5])
+    robot = SimpleNamespace(data=SimpleNamespace(root_link_lin_vel_b=torch.stack(
+        [velocities, torch.zeros_like(velocities), torch.zeros_like(velocities)], dim=-1
+    )))
+    twist = SimpleNamespace(get_command=lambda name: torch.tensor(
+        [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]]
+    ))
+    env = SimpleNamespace(scene={"robot": robot}, command_manager=twist)
+
+    reward = rewards.exceed_command(env, "twist", std=0.25)
+    assert torch.allclose(reward, torch.tensor([0.0, 0.0, math.tanh(0.5 / 0.25), math.tanh(1.5 / 0.25)]))
+    assert reward.min() >= 0
+    assert reward.max() <= 1
+
+
 def test_the_roller_trains_with_the_arenas_free_wheels():
     # The Arena's roller model's wheel bearings are frictionless (frictionloss=0.0
     # in robot_allcollisions_rollers.xml's passive_joint default); a policy trained
